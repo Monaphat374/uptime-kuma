@@ -1,6 +1,6 @@
 import { PluginFunc, ConfigType } from 'dayjs/esm'
 
-declare const plugin: PluginFunc
+declare const plugin: PluginFunc;
 export = plugin
 
 declare module 'dayjs/esm' {
@@ -16,5 +16,5 @@ declare module 'dayjs/esm' {
     setDefault(timezone?: string): void
   }
 
-  const tz: DayjsTimezone
+  const tz: DayjsTimezone;
 }
