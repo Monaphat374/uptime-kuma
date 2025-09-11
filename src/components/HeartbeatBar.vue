@@ -17,11 +17,7 @@
         </div>
 
         <!-- Custom Tooltip -->
-        <Tooltip
-            :visible="tooltipVisible"
-            :content="tooltipContent" :x="tooltipX" :y="tooltipY"
-            :position="tooltipPosition"
-        />
+        <Tooltip :visible="tooltipVisible" :content="tooltipContent" :x="tooltipX" :y="tooltipY" :position="tooltipPosition" />
     </div>
 </template>
 
@@ -242,9 +238,9 @@ export default {
             if (seconds < tolerance) {
                 return this.$t("now");
             } else if (seconds < 60 * 60) {
-                return this.$t("time ago", [ (seconds / 60).toFixed(0) + "m" ] );
+                return this.$t("time ago", [(seconds / 60).toFixed(0) + "m"]);
             } else {
-                return this.$t("time ago", [ (seconds / 60 / 60).toFixed(0) + "h" ] );
+                return this.$t("time ago", [(seconds / 60 / 60).toFixed(0) + "h"]);
             }
         }
     },

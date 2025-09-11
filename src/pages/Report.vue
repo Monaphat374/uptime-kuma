@@ -212,14 +212,14 @@ export default {
             const nowLocal = dayjs.tz ? dayjs().tz(this.userTZ) : dayjs();
 
             if (r === "7d") {
-            // ย้อนหลัง 7 วันเต็ม: [00:00 ของ 7 วันก่อน, 00:00 วันนี้)
+                // ย้อนหลัง 7 วันเต็ม: [00:00 ของ 7 วันก่อน, 00:00 วันนี้)
                 const startLocal = nowLocal.startOf("day").subtract(7, "day");
                 const endLocal = nowLocal.startOf("day");
                 this.from = startLocal.utc().toISOString();
                 this.to = endLocal.utc().toISOString();
 
             } else if (r === "lastday") {
-            // เมื่อวานเต็มวัน
+                // เมื่อวานเต็มวัน
                 const startLocal = nowLocal.subtract(1, "day").startOf("day");
                 const endLocal = nowLocal.startOf("day");
                 this.from = startLocal.utc().toISOString();
@@ -355,9 +355,11 @@ export default {
                 return;
             }
             try {
-                const doc = new jsPDF({ orientation: "p",
+                const doc = new jsPDF({
+                    orientation: "p",
                     unit: "pt",
-                    format: "a4" });
+                    format: "a4"
+                });
 
                 // --- ฟอนต์ไทย (ถ้าต้องการ) ---
                 // doc.addFileToVFS("Sarabun-Regular.ttf", sarabunRegularBase64);
@@ -375,8 +377,10 @@ export default {
                     head,
                     body,
                     startY: 60,
-                    margin: { left: 40,
-                        right: 40 },
+                    margin: {
+                        left: 40,
+                        right: 40
+                    },
                     styles: { fontSize: 10 /* ถ้าใช้ฟอนต์ไทย: font: "Sarabun" */ },
                     headStyles: { fillColor: [ 240, 240, 240 ] },
                     didDrawPage: () => {
