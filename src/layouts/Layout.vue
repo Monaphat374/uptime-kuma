@@ -5,22 +5,25 @@
                 {{ $root.connectionErrorMsg }}
                 <div v-if="$root.showReverseProxyGuide">
                     {{ $t("Using a Reverse Proxy?") }} <a
-                        href="https://github.com/louislam/uptime-kuma/wiki/Reverse-Proxy" target="_blank">{{ $t("Check
-                        how to config it for WebSocket") }}</a>
+                        href="https://github.com/louislam/uptime-kuma/wiki/Reverse-Proxy"
+                        target="_blank"
+                    >
+                        {{ $t("Checkhow to config it for WebSocket") }}</a>
                 </div>
             </div>
         </div>
 
         <!-- Desktop header -->
         <header v-if="!$root.isMobile" class="d-flex flex-wrap justify-content-center py-3 mb-3 border-bottom">
-            <router-link to="/dashboard"
-                class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+            <router-link
+                to="/dashboard"
+                class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none"
+            >
                 <object class="bi me-2 ms-4" width="40" height="40" data="/icon.svg" />
                 <span class="fs-4 title">{{ $t("Uptime Kuma") }}</span>
             </router-link>
 
-            <a v-if="hasNewVersion" target="_blank" href="https://github.com/louislam/uptime-kuma/releases"
-                class="btn btn-primary me-3">
+            <a v-if="hasNewVersion" target="_blank" href="https://github.com/louislam/uptime-kuma/releases" class="btn btn-primary me-3">
                 <font-awesome-icon icon="arrow-alt-circle-up" /> {{ $t("New Update") }}
             </a>
 
@@ -52,8 +55,7 @@
                         <ul class="dropdown-menu">
                             <!-- Username -->
                             <li>
-                                <i18n-t v-if="$root.username != null" tag="span" keypath="signedInDisp"
-                                    class="dropdown-item-text">
+                                <i18n-t v-if="$root.username != null" tag="span" keypath="signedInDisp" class="dropdown-item-text">
                                     <strong>{{ $root.username }}</strong>
                                 </i18n-t>
                                 <span v-if="$root.username == null" class="dropdown-item-text">{{
@@ -66,22 +68,19 @@
 
                             <!-- Functions -->
                             <li>
-                                <router-link to="/maintenance" class="dropdown-item"
-                                    :class="{ active: $route.path.includes('manage-maintenance') }">
+                                <router-link to="/maintenance" class="dropdown-item" :class="{ active: $route.path.includes('manage-maintenance') }">
                                     <font-awesome-icon icon="wrench" /> {{ $t("Maintenance") }}
                                 </router-link>
                             </li>
 
                             <li>
-                                <router-link to="/settings/general" class="dropdown-item"
-                                    :class="{ active: $route.path.includes('settings') }">
+                                <router-link to="/settings/general" class="dropdown-item" :class="{ active: $route.path.includes('settings') }">
                                     <font-awesome-icon icon="cog" /> {{ $t("Settings") }}
                                 </router-link>
                             </li>
 
                             <li>
-                                <a href="https://github.com/louislam/uptime-kuma/wiki" class="dropdown-item"
-                                    target="_blank">
+                                <a href="https://github.com/louislam/uptime-kuma/wiki" class="dropdown-item" target="_blank">
                                     <font-awesome-icon icon="info-circle" /> {{ $t("Help") }}
                                 </a>
                             </li>
@@ -135,8 +134,7 @@
             </router-link>
         </nav>
 
-        <button v-if="numActiveToasts != 0" type="button" class="btn btn-normal clear-all-toast-btn"
-            @click="clearToasts">
+        <button v-if="numActiveToasts != 0" type="button" class="btn btn-normal clear-all-toast-btn" @click="clearToasts">
             <font-awesome-icon icon="times" />
         </button>
     </div>
