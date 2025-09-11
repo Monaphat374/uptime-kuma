@@ -17,6 +17,8 @@ require("dotenv").config();
 // Check Node.js Version
 const nodeVersion = process.versions.node;
 
+const path = require("path");
+
 // Get the required Node.js version from package.json
 const requiredNodeVersions = require("../package.json").engines.node;
 const bannedNodeVersions = " < 18 || 20.0.* || 20.1.* || 20.2.* || 20.3.* ";
@@ -84,6 +86,10 @@ const { UptimeKumaServer } = require("./uptime-kuma-server");
 const server = UptimeKumaServer.getInstance();
 const io = module.exports.io = server.io;
 const app = server.app;
+
+// Report Router (ที่คุณสร้างใหม่)
+const reportRouter = require("./routers/report");
+app.use(reportRouter);
 
 log.debug("server", "Importing Monitor");
 const Monitor = require("./model/monitor");
@@ -297,6 +303,20 @@ let needSetup = false;
     app.use("/", expressStaticGzip("dist", {
         enableBrotli: true,
     }));
+
+    app.use(require("cors")());
+    app.use(express.json());
+
+    // ✅ API มาก่อน
+    app.get("/health", (req, res) => res.json({ ok: true,
+        ts: Date.now() }));
+    app.use(require("./routers/report")); // /api/report
+
+    // ⬇️ เสิร์ฟไฟล์ static (ถ้ามี) และ SPA fallback ต้องอยู่ท้ายสุด
+    app.use(express.static(path.join(__dirname, "../dist")));
+    app.get(/^(?!\/api).*/, (req, res) => {
+        res.sendFile(path.join(__dirname, "../dist/index.html"));
+    });
 
     // ./data/upload
     app.use("/upload", express.static(Database.uploadDir));

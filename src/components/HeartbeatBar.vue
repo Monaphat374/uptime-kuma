@@ -1,31 +1,16 @@
 <template>
     <div ref="wrap" class="wrap" :style="wrapStyle">
         <div class="hp-bar-big" :style="barStyle">
-            <div
-                v-for="(beat, index) in shortBeatList"
-                :key="index"
-                class="beat-hover-area"
-                :class="{ 'empty': (beat === 0) }"
-                :style="beatHoverAreaStyle"
-                :aria-label="getBeatAriaLabel(beat)"
-                role="status"
-                tabindex="0"
-                @mouseenter="showTooltip(beat, $event)"
-                @mouseleave="hideTooltip"
-                @focus="showTooltip(beat, $event)"
-                @blur="hideTooltip"
-            >
-                <div
+            <div v-for="(beat, index) in shortBeatList" :key="index" class="beat-hover-area" :class="{ 'empty': (beat === 0) }" :style="beatHoverAreaStyle" :aria-label="getBeatAriaLabel(beat)" role="status" tabindex="0" @mouseenter="showTooltip(beat, $event)" @mouseleave="hideTooltip" @focus="showTooltip(beat, $event)" @blur="hideTooltip">
+                <!--div
                     class="beat"
-                    :class="{ 'empty': (beat === 0 || beat === null || beat.status === null), 'down': (beat.status === DOWN), 'pending': (beat.status === PENDING), 'maintenance': (beat.status === MAINTENANCE) }"
+                    :class="getBeatClasses(beat)"
                     :style="beatStyle"
-                />
+                /-->
+                <div class="beat" :class="barClass(beat, index)" :style="beatStyle" />
             </div>
         </div>
-        <div
-            v-if="!$root.isMobile && size !== 'small' && beatList.length > 4 && $root.styleElapsedTime !== 'none'"
-            class="d-flex justify-content-between align-items-center word" :style="timeStyle"
-        >
+        <div v-if="!$root.isMobile && size !== 'small' && beatList.length > 4 && $root.styleElapsedTime !== 'none'" class="d-flex justify-content-between align-items-center word" :style="timeStyle">
             <div>{{ timeSinceFirstBeat }}</div>
             <div v-if="$root.styleElapsedTime === 'with-line'" class="connecting-line"></div>
             <div>{{ timeSinceLastBeat }}</div>
@@ -34,9 +19,7 @@
         <!-- Custom Tooltip -->
         <Tooltip
             :visible="tooltipVisible"
-            :content="tooltipContent"
-            :x="tooltipX"
-            :y="tooltipY"
+            :content="tooltipContent" :x="tooltipX" :y="tooltipY"
             :position="tooltipPosition"
         />
     </div>
@@ -259,9 +242,9 @@ export default {
             if (seconds < tolerance) {
                 return this.$t("now");
             } else if (seconds < 60 * 60) {
-                return this.$t("time ago", [ (seconds / 60).toFixed(0) + "m" ]);
+                return this.$t("time ago", [ (seconds / 60).toFixed(0) + "m" ] );
             } else {
-                return this.$t("time ago", [ (seconds / 60 / 60).toFixed(0) + "h" ]);
+                return this.$t("time ago", [ (seconds / 60 / 60).toFixed(0) + "h" ] );
             }
         }
     },
@@ -358,6 +341,25 @@ export default {
         },
 
         /**
+         * Get CSS classes for a beat element based on its status
+         * @param {object} beat - Beat object containing status information
+         * @returns {object} Object with CSS class names as keys and boolean values
+         */
+        getBeatClasses(beat) {
+            if (beat === 0 || beat === null || beat?.status === null) {
+                return { empty: true };
+            }
+
+            const status = Number(beat.status);
+
+            return {
+                down: status === DOWN,
+                pending: status === PENDING,
+                maintenance: status === MAINTENANCE
+            };
+        },
+
+        /**
          * Get the aria-label for accessibility
          * @param {object} beat Beat to get aria-label from
          * @returns {string} Aria label
@@ -375,6 +377,32 @@ export default {
                 default:
                     return "No data";
             }
+        },
+
+        barClass(beat, index) {
+            // ว่างจริง (placeholder หรือ null/undefined)
+            if (beat === 0 || beat == null) {
+                return { empty: true };
+            }
+
+            const isLast = index === this.shortBeatList.length - 1;
+
+            // ใช้ beat.status ถ้ามี; ถ้าไม่มีและเป็นแท่งสุดท้าย ให้ fallback เป็น lastStatus
+            let status = (beat.status != null) ? beat.status : (isLast ? this.lastStatus : null);
+
+            // เผื่อ payload aggregate ไม่มี status แต่มี ok/up บอกได้ว่า down
+            const inferredDown = (beat?.ok === false) || (beat?.up === 0);
+
+            const isDown = (status === DOWN) || inferredDown;
+            const isPending = (status === PENDING);
+            const isMaint = (status === MAINTENANCE);
+
+            return {
+                empty: false,
+                down: isDown,
+                pending: isPending,
+                maintenance: isMaint,
+            };
         },
 
         /**
