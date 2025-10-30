@@ -1,5 +1,6 @@
 {
   "files.eol": "\n",
   "prettier.endOfLine": "lf",
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "vscode-pets.theme": "beach"
 }
