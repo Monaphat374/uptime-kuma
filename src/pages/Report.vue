@@ -646,30 +646,11 @@ export default {
                 this.fmtPct(r.uptime),
                 this.fmtPct(r.success),
             ]));
-            const m = this.metrics || {};
-            const aoa = [
-                header, ...body, [],
-                [`Availability: ${(m.availabilitySamplePct ?? 0).toFixed(2)}%`],
-                [`Uptime: ${Number.isFinite(m.uptimePct) ? m.uptimePct.toFixed(2) : "-"}%`],
-                [`Success Rate: ${(m.successRatePct ?? 0).toFixed(2)}%`],
-            ];
+
+            const aoa = [header, ...body];
 
             const ws = XLSX.utils.aoa_to_sheet(aoa);
-            const firstSummaryRow = body.length + 3;
-            ws["!merges"] = (ws["!merges"] || []).concat([
-                { s: { r: firstSummaryRow - 1,
-                    c: 0 },
-                e: { r: firstSummaryRow - 1,
-                    c: 5 } },
-                { s: { r: firstSummaryRow,
-                    c: 0 },
-                e: { r: firstSummaryRow,
-                    c: 5 } },
-                { s: { r: firstSummaryRow + 1,
-                    c: 0 },
-                e: { r: firstSummaryRow + 1,
-                    c: 5 } },
-            ]);
+
             ws["!cols"] = [
                 { wch: 6 },  // #
                 { wch: 28 }, // Monitor
