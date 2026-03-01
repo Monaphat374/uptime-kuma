@@ -1,6 +1,6 @@
 const express = require("express");
 const http = require("node:http");
-const { log } = require("../../src/util");
+const { printServerUrls } = require("../util-server");
 
 /**
  * SimpleMigrationServer
@@ -37,6 +37,21 @@ class SimpleMigrationServer {
         this.server = http.createServer(this.app);
 
         this.app.get("/", (req, res) => {
+            res.set("Content-Type", "text/html");
+
+            // Don't use meta tag redirect, it may cause issues in Chrome (#6223)
+            res.end(`
+                <html lang="en">
+                <head><title>Uptime Kuma Migration</title></head>
+                <body>
+                    Migration is in progress, it may take some time. You can check the progress in the console, or
+                    <a href="/migrate-status" target="_blank">click here to check</a>.
+                </body>
+                </html>
+            `);
+        });
+
+        this.app.get("/migrate-status", (req, res) => {
             res.set("Content-Type", "text/plain");
             res.write("Migration is in progress, listening message...\n");
             if (this.response) {
@@ -49,11 +64,7 @@ class SimpleMigrationServer {
 
         return new Promise((resolve) => {
             this.server.listen(port, hostname, () => {
-                if (hostname) {
-                    log.info("migration", `Migration server is running on http://${hostname}:${port}`);
-                } else {
-                    log.info("migration", `Migration server is running on http://localhost:${port}`);
-                }
+                printServerUrls("migration", port, hostname);
                 resolve();
             });
         });

@@ -3,7 +3,6 @@ const axios = require("axios");
 const { DOWN, UP } = require("../../src/util");
 
 class SpugPush extends NotificationProvider {
-
     name = "SpugPush";
 
     /**
@@ -14,7 +13,7 @@ class SpugPush extends NotificationProvider {
         try {
             let formData = {
                 title: "Uptime Kuma Message",
-                content: msg
+                content: msg,
             };
             if (heartbeatJSON) {
                 if (heartbeatJSON["status"] === UP) {
@@ -26,7 +25,8 @@ class SpugPush extends NotificationProvider {
                 }
             }
             const apiUrl = `https://push.spug.cc/send/${notification.templateKey}`;
-            await axios.post(apiUrl, formData);
+            let config = this.getAxiosConfigWithProxy({});
+            await axios.post(apiUrl, formData, config);
             return okMsg;
         } catch (error) {
             this.throwGeneralAxiosError(error);

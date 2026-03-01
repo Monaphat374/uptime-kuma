@@ -1,8 +1,9 @@
 const { Liquid } = require("liquidjs");
 const { DOWN } = require("../../src/util");
+const { HttpProxyAgent } = require("http-proxy-agent");
+const { HttpsProxyAgent } = require("https-proxy-agent");
 
 class NotificationProvider {
-
     /**
      * Notification Provider Name
      * @type {string}
@@ -44,8 +45,18 @@ class NotificationProvider {
                     return monitorJSON["hostname"] + ":" + monitorJSON["port"];
                 }
                 return monitorJSON["hostname"];
+            case "globalping":
+                switch (monitorJSON["subtype"]) {
+                    case "ping":
+                    case "dns":
+                        return monitorJSON["hostname"];
+                    case "http":
+                        return monitorJSON["url"];
+                    default:
+                        return "";
+                }
             default:
-                if (![ "https://", "http://", "" ].includes(monitorJSON["url"])) {
+                if (!["https://", "http://", ""].includes(monitorJSON["url"])) {
                     return monitorJSON["url"];
                 }
                 return "";
@@ -61,7 +72,11 @@ class NotificationProvider {
      * @returns {Promise<string>} rendered template
      */
     async renderTemplate(template, msg, monitorJSON, heartbeatJSON) {
-        const engine = new Liquid();
+        const engine = new Liquid({
+            root: "./no-such-directory-uptime-kuma",
+            relativeReference: false,
+            dynamicPartials: false,
+        });
         const parsedTpl = engine.parse(template);
 
         // Let's start with dummy values to simplify code
@@ -75,19 +90,19 @@ class NotificationProvider {
 
         let serviceStatus = "⚠️ Test";
         if (heartbeatJSON !== null) {
-            serviceStatus = (heartbeatJSON["status"] === DOWN) ? "🔴 Down" : "✅ Up";
+            serviceStatus = heartbeatJSON["status"] === DOWN ? "🔴 Down" : "✅ Up";
         }
 
         const context = {
             // for v1 compatibility, to be removed in v3
-            "STATUS": serviceStatus,
-            "NAME": monitorName,
-            "HOSTNAME_OR_URL": monitorHostnameOrURL,
+            STATUS: serviceStatus,
+            NAME: monitorName,
+            HOSTNAME_OR_URL: monitorHostnameOrURL,
 
             // variables which are officially supported
-            "status": serviceStatus,
-            "name": monitorName,
-            "hostnameOrURL": monitorHostnameOrURL,
+            status: serviceStatus,
+            name: monitorName,
+            hostnameOrURL: monitorHostnameOrURL,
             monitorJSON,
             heartbeatJSON,
             msg,
@@ -103,17 +118,76 @@ class NotificationProvider {
      * @throws {any} The error specified
      */
     throwGeneralAxiosError(error) {
-        let msg = "Error: " + error + " ";
+        let msg = error && error.message ? error.message : String(error);
 
-        if (error.response && error.response.data) {
+        if (error && error.code) {
+            msg += ` (code=${error.code})`;
+        }
+
+        if (error && error.response && error.response.status) {
+            msg += ` (HTTP ${error.response.status}${error.response.statusText ? " " + error.response.statusText : ""})`;
+        }
+
+        if (error && error.response && error.response.data) {
             if (typeof error.response.data === "string") {
-                msg += error.response.data;
+                msg += " " + error.response.data;
             } else {
-                msg += JSON.stringify(error.response.data);
+                try {
+                    msg += " " + JSON.stringify(error.response.data);
+                } catch (e) {
+                    msg += " " + String(error.response.data);
+                }
             }
         }
 
+        // Expand AggregateError to show underlying causes
+        let agg = null;
+        if (error && error.name === "AggregateError" && Array.isArray(error.errors)) {
+            agg = error;
+        } else if (error && error.cause && error.cause.name === "AggregateError" && Array.isArray(error.cause.errors)) {
+            agg = error.cause;
+        }
+
+        if (agg) {
+            let causes = agg.errors
+                .map((e) => {
+                    let m = e && e.message ? e.message : String(e);
+                    if (e && e.code) {
+                        m += ` (code=${e.code})`;
+                    }
+                    return m;
+                })
+                .join("; ");
+            msg += " - caused by: " + causes;
+        } else if (error && error.cause && error.cause.message) {
+            msg += " - cause: " + error.cause.message;
+        }
+
         throw new Error(msg);
+    }
+
+    /**
+     * Returns axios config with proxy agent if proxy env is set.
+     * @param {object} axiosConfig - Axios config containing params
+     * @returns {object} Axios config
+     */
+    getAxiosConfigWithProxy(axiosConfig = {}) {
+        const proxyEnv = process.env.notification_proxy || process.env.NOTIFICATION_PROXY;
+        if (proxyEnv) {
+            const proxyUrl = new URL(proxyEnv);
+
+            if (proxyUrl.protocol === "http:") {
+                axiosConfig.httpAgent = new HttpProxyAgent(proxyEnv);
+                axiosConfig.httpsAgent = new HttpsProxyAgent(proxyEnv);
+            } else if (proxyUrl.protocol === "https:") {
+                const agent = new HttpsProxyAgent(proxyEnv);
+                axiosConfig.httpAgent = agent;
+                axiosConfig.httpsAgent = agent;
+            }
+
+            axiosConfig.proxy = false;
+        }
+        return axiosConfig;
     }
 }
 

@@ -1,7 +1,7 @@
 const NotificationProvider = require("./notification-provider");
 const axios = require("axios");
-const { setting } = require("../util-server");
 const { getMonitorRelativeURL, UP } = require("../../src/util");
+const { Settings } = require("../settings");
 
 class GoogleChat extends NotificationProvider {
     name = "GoogleChat";
@@ -12,7 +12,31 @@ class GoogleChat extends NotificationProvider {
     async send(notification, msg, monitorJSON = null, heartbeatJSON = null) {
         const okMsg = "Sent Successfully.";
 
+        // If Google Chat Webhook rate limit is reached, retry to configured max retries defaults to 3, delay between 60-180 seconds
+        const post = async (url, data, config) => {
+            let retries = notification.googleChatMaxRetries || 1; // Default to 1 retries
+            retries = retries > 10 ? 10 : retries; // Enforce maximum retries in backend
+            while (retries > 0) {
+                try {
+                    await axios.post(url, data, config);
+                    return;
+                } catch (error) {
+                    if (error.response && error.response.status === 429) {
+                        retries--;
+                        if (retries === 0) {
+                            throw error;
+                        }
+                        const delay = 60000 + Math.random() * 120000;
+                        await new Promise((resolve) => setTimeout(resolve, delay));
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        };
+
         try {
+            let config = this.getAxiosConfigWithProxy({});
             // Google Chat message formatting: https://developers.google.com/chat/api/guides/message-formats/basic
             if (notification.googleChatUseTemplate && notification.googleChatTemplate) {
                 // Send message using template
@@ -22,8 +46,8 @@ class GoogleChat extends NotificationProvider {
                     monitorJSON,
                     heartbeatJSON
                 );
-                const data = { "text": renderedText };
-                await axios.post(notification.googleChatWebhookURL, data);
+                const data = { text: renderedText };
+                await post(notification.googleChatWebhookURL, data, config);
                 return okMsg;
             }
 
@@ -56,8 +80,18 @@ class GoogleChat extends NotificationProvider {
                 });
             }
 
+            // add monitor address if available
+            const address = this.extractAddress(monitorJSON);
+            if (address) {
+                sectionWidgets.push({
+                    textParagraph: {
+                        text: `<b>Address:</b>\n${address}`,
+                    },
+                });
+            }
+
             // add button for monitor link if available
-            const baseURL = await setting("primaryBaseURL");
+            const baseURL = await Settings.get("primaryBaseURL");
             if (baseURL) {
                 const urlPath = monitorJSON ? getMonitorRelativeURL(monitorJSON.id) : "/";
                 sectionWidgets.push({
@@ -95,7 +129,7 @@ class GoogleChat extends NotificationProvider {
                 ],
             };
 
-            await axios.post(notification.googleChatWebhookURL, data);
+            await post(notification.googleChatWebhookURL, data, config);
             return okMsg;
         } catch (error) {
             this.throwGeneralAxiosError(error);
